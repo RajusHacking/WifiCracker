@@ -1,4 +1,4 @@
-package com.wificracker.app
+package com.eni.wificracker
 
 object DefaultKeyGen {
 
