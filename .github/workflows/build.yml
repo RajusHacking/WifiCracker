@@ -1,58 +1,38 @@
-name: Build WifiCracker APK
+name: Android CI
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ "main" ]
   pull_request:
-    branches: [ main, master ]
-  workflow_dispatch:
+    branches: [ "main" ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+    - name: Checkout Repository
+      uses: actions/checkout@v4
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        cache: gradle
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
 
-      - name: Grant execute permission for gradlew
-        run: chmod +x ./gradlew
-
-      - name: Show project structure (DEBUG)
-        run: |
-          echo "=== Root directory ==="
-          ls -la
-          echo "=== app directory ==="
-          ls -la app/ || echo "no app folder"
-          echo "=== settings.gradle ==="
-          cat settings.gradle || echo "no settings.gradle"
-
-      - name: Build with Gradle (verbose)
-        run: ./gradlew assembleDebug --stacktrace --info
-
-      - name: Find ALL APK files (DEBUG)
-        if: always()
-        run: |
-          echo "=== Searching for APK files everywhere ==="
-          find . -name "*.apk" -type f 2>/dev/null || echo "NO APK FOUND ANYWHERE"
-          echo "=== build/outputs structure ==="
-          find . -path "*/build/outputs*" -type d 2>/dev/null || echo "no outputs folder"
-          echo "=== Full build tree ==="
-          find . -path "*/build/*" -type f 2>/dev/null | head -50
-
-      - name: Upload APK
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: WifiCracker-debug
-          path: '**/*.apk'
-          if-no-files-found: error
+    - name: Build Debug APK
+      run: ./gradlew assembleDebug --stacktrace
+      
+    - name: Find ALL APK files (DEBUGGING)
+      run: find . -name "*.apk"
+      
+    - name: Upload APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: WifiCracker-debug
+        path: app/build/outputs/apk/debug/*.apk
+        if-no-files-found: error
