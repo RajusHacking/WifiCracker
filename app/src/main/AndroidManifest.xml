@@ -11,12 +11,15 @@
 
     <application
         android:allowBackup="true"
+        android:icon="@mipmap/launcher_icon"
+        android:roundIcon="@mipmap/launcher_icon"
         android:label="WifiCracker"
         android:theme="@style/Theme.AppCompat.DayNight"
         android:usesCleartextTraffic="true">
         
+        <!-- এখানে প্যাকেজের সম্পূর্ণ নাম দেওয়া হলো যাতে আর ক্র্যাশ না করে -->
         <activity
-            android:name=".MainActivity"
+            android:name="com.eni.wificracker.MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

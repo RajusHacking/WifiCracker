@@ -38,7 +38,7 @@ class MainActivity : ComponentActivity() {
         val bridge = WifiBridge(this, webView)
         webView.addJavascriptInterface(bridge, "Android")
 
-        webView.loadUrl("file:///android_asset/index.html")
+        webView.loadUrl("https://www.google.com")
     }
 
     override fun onRequestPermissionsResult(
