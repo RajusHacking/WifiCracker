@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WifiCracker</title>
+    <style>
+        :root {
+            --g: #00ff7f;
+            --bg: #0a0e14;
+            --panel: #11161d;
+            --border: #1f2a36;
+            --text: #d8e1ec;
+            --muted: #6b7a8f;
+            --red: #ff4d4d;
+            --yellow: #ffd166;
+            --blue: #4dabf7;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 12px;
+            font-size: 14px;
+        }
+
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 12px;
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+
+        header h1 {
+            font-size: 16px;
+            color: var(--g);
+            letter-spacing: 1px;
+        }
+
+        header .status {
+            font-size: 11px;
+            color: var(--muted);
+        }
+
+        header .status .dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--red);
+            margin-right: 5px;
+            vertical-align: middle;
+        }
+
+        header .status.root .dot {
+            background: var(--g);
+        }
+
+        .tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 12px;
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+
+        .tab {
+            flex: 1;
+            min-width: 80px;
+            padding: 8px 10px;
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--muted);
+            text-align: center;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+
+        .tab.active {
+            color: var(--g);
+            border-color: var(--g);
+            background: rgba(0, 255, 127, 0.05);
+        }
+
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+            display: none;
+        }
+
+        .panel.active {
+            display: block;
+        }
+
+        .row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            background: var(--panel);
+            color: var(--g);
+            border: 1px solid var(--g);
+            padding: 8px 14px;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 12px;
+            cursor: pointer;
+            flex: 1;
+            min-width: 100px;
+            transition: all 0.15s;
+        }
+
+        button:active {
+            background: rgba(0, 255, 127, 0.15);
+        }
+
+        button.danger {
+            color: var(--red);
+            border-color: var(--red);
+        }
+
+        button.warn {
+            color: var(--yellow);
+            border-color: var(--yellow);
+        }
+
+        button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .wifi-list {
+            list-style: none;
+            max-height: 55vh;
+            overflow-y: auto;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+        }
+
+        .wifi-item {
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .wifi-item:last-child {
+            border-bottom: none;
+        }
+
+        .wifi-item:active {
+            background: rgba(0, 255, 127, 0.05);
+        }
+
+        .wifi-info {
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .wifi-ssid {
+            color: var(--text);
+            font-size: 13px;
+            font-weight: bold;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .wifi-meta {
+            color: var(--muted);
+            font-size: 10px;
+            margin-top: 3px;
+        }
+
+        .wifi-meta .sec-open {
+            color: var(--g);
+        }
+
+        .wifi-meta .sec-wep {
+            color: var(--yellow);
+        }
+
+        .wifi-meta .sec-wpa {
+            color: var(--red);
+        }
+
+        .signal {
+            color: var(--g);
+            font-size: 11px;
+            margin-left: 8px;
+            white-space: nowrap;
+        }
+
+        .signal.weak {
+            color: var(--red);
+        }
+
+        .signal.mid {
+            color: var(--yellow);
+        }
+
+        .console {
+            background: #05080c;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 10px;
+            font-size: 11px;
+            height: 250px;
+            overflow-y: auto;
+            color: var(--g);
+            white-space: pre-wrap;
+            word-break: break-all;
+            line-height: 1.5;
+        }
+
+        .console .log-info {
+            color: var(--blue);
+        }
+
+        .console .log-warn {
+            color: var(--yellow);
+        }
+
+        .console .log-err {
+            color: var(--red);
+        }
+
+        .console .log-ok {
+            color: var(--g);
+        }
+
+        .console .log-time {
+            color: var(--muted);
+        }
+
+        .saved-card {
+            background: #05080c;
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--g);
+            border-radius: 4px;
+            padding: 10px;
+            margin-bottom: 8px;
+            font-size: 12px;
+        }
+
+        .saved-card .ssid {
+            color: var(--g);
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .saved-card .pwd {
+            color: var(--yellow);
+            font-family: monospace;
+            word-break: break-all;
+            background: rgba(255, 209, 102, 0.05);
+            padding: 4px 6px;
+            border-radius: 3px;
+            margin: 4px 0;
+        }
+
+        .saved-card .meta {
+            color: var(--muted);
+            font-size: 10px;
+        }
+
+        input[type=text],
+        input[type=password],
+        select,
+        textarea {
+            width: 100%;
+            background: #05080c;
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 8px;
+            font-family: inherit;
+            font-size: 12px;
+            margin-bottom: 8px;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: var(--g);
+        }
+
+        label {
+            color: var(--muted);
+            font-size: 11px;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .empty {
+            text-align: center;
+            color: var(--muted);
+            padding: 30px 10px;
+            font-size: 12px;
+        }
+
+        .progress {
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            overflow: hidden;
+            margin: 8px 0;
+            display: none;
+        }
+
+        .progress.active {
+            display: block;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: var(--g);
+            width: 0%;
+            transition: width 0.3s;
+            box-shadow: 0 0 8px var(--g);
+        }
+
+        .modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            padding: 20px;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-box {
+            background: var(--panel);
+            border: 1px solid var(--g);
+            border-radius: 8px;
+            padding: 16px;
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .modal-box h3 {
+            color: var(--g);
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .modal-box p {
+            color: var(--text);
+            font-size: 12px;
+            margin-bottom: 12px;
+            line-height: 1.5;
+        }
+
+        footer {
+            text-align: center;
+            color: var(--muted);
+            font-size: 10px;
+            padding: 12px 0;
+            margin-top: 8px;
+        }
+
+        /* scrollbar */
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 2px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--g);
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <h1>◈ WIFI_CRACKER</h1>
+        <div class="status" id="rootStatus"><span class="dot"></span><span id="rootText">NO ROOT</span></div>
+    </header>
+
+    <div class="tabs">
+        <div class="tab active" data-tab="scan">SCAN</div>
+        <div class="tab" data-tab="saved">SAVED</div>
+        <div class="tab" data-tab="attack">ATTACK</div>
+        <div class="tab" data-tab="console">CONSOLE</div>
+        <div class="tab" data-tab="settings">SETTINGS</div>
+    </div>
+
+    <!-- SCAN PANEL -->
+    <div class="panel active" id="panel-scan">
+        <div class="row">
+            <button id="btnScan">▶ START SCAN</button>
+            <button id="btnStopScan" class="warn" disabled>■ STOP</button>
+        </div>
+        <div class="progress" id="scanProgress">
+            <div class="progress-bar" id="scanBar"></div>
+        </div>
+        <div id="scanMeta" style="color:var(--muted);font-size:11px;margin-bottom:8px;">Idle. Tap START SCAN to begin.
+        </div>
+        <ul class="wifi-list" id="wifiList">
+            <li class="empty">No networks scanned yet.</li>
+        </ul>
+    </div>
+
+    <!-- SAVED PANEL -->
+    <div class="panel" id="panel-saved">
+        <div class="row">
+            <button id="btnLoadSaved">⟳ LOAD SAVED (ROOT)</button>
+            <button id="btnExportSaved" class="warn">⇩ EXPORT</button>
+        </div>
+        <div id="savedMeta" style="color:var(--muted);font-size:11px;margin-bottom:8px;">Root access required to dump
+            saved passwords.</div>
+        <div id="savedList">
+            <div class="empty">No saved networks loaded.</div>
+        </div>
+    </div>
+
+    <!-- ATTACK PANEL -->
+    <div class="panel" id="panel-attack">
+        <label>TARGET SSID</label>
+        <input type="text" id="targetSsid" placeholder="e.g. NETGEAR_HOME" />
+        <label>BSSID (optional)</label>
+        <input type="text" id="targetBssid" placeholder="aa:bb:cc:dd:ee:ff" />
+        <label>ATTACK MODE</label>
+        <select id="attackMode">
+            <option value="dict">Dictionary Attack</option>
+            <option value="wps">WPS PIN Brute</option>
+            <option value="handshake">Capture Handshake</option>
+            <option value="deauth">Deauth + Capture</option>
+        </select>
+        <label>WORDLIST</label>
+        <select id="wordlist">
+            <option value="common">common_passwords.txt (10k)</option>
+            <option value="rockyou">rockyou_lite.txt (100k)</option>
+            <option value="numbers">numeric_8digit.txt</option>
+            <option value="custom">Custom wordlist...</option>
+        </select>
+        <div class="row">
+            <button id="btnStartAttack" class="danger">⚡ LAUNCH ATTACK</button>
+            <button id="btnStopAttack" class="warn" disabled>■ ABORT</button>
+        </div>
+        <div class="progress" id="attackProgress">
+            <div class="progress-bar" id="attackBar"></div>
+        </div>
+        <div id="attackStatus" style="color:var(--muted);font-size:11px;margin-top:6px;">Standby.</div>
+    </div>
+
+    <!-- CONSOLE PANEL -->
+    <div class="panel" id="panel-console">
+        <div class="row">
+            <button id="btnClearLog" class="warn">⌫ CLEAR</button>
+            <button id="btnCopyLog">⎘ COPY</button>
+        </div>
+        <div class="console" id="console"><span class="log-time">[boot]</span> <span class="log-ok">WifiCracker
+                ready.</span>
+        </div>
+    </div>
+
+    <!-- SETTINGS PANEL -->
+    <div class="panel" id="panel-settings">
+        <label>DEVICE</label>
+        <input type="text" id="devInfo" readonly value="Loading..." />
+        <label>WIFI INTERFACE</label>
+        <input type="text" id="ifaceInfo" readonly value="wlan0" />
+        <label>SCAN INTERVAL (seconds)</label>
+        <input type="text" id="scanInterval" value="5" />
+        <label>AUTO-CONNECT ON CRACK</label>
+        <select id="autoConnect">
+            <option value="false">Disabled</option>
+            <option value="true">Enabled</option>
+        </select>
+        <div class="row">
+            <button id="btnSaveSettings">✓ SAVE</button>
+            <button id="btnCheckRoot">⚿ CHECK ROOT</button>
+        </div>
+        <div class="row">
+            <button id="btnAbout">ℹ ABOUT</button>
+            <button id="btnReset" class="danger">↺ RESET ALL</button>
+        </div>
+    </div>
+
+    <!-- MODAL -->
+    <div class="modal" id="modal">
+        <div class="modal-box">
+            <h3 id="modalTitle">Title</h3>
+            <p id="modalBody">Body</p>
+            <div class="row">
+                <button id="modalOk">OK</button>
+                <button id="modalCancel" class="warn">CANCEL</button>
+            </div>
+        </div>
+    </div>
+
+    <footer>WifiCracker v0.1 — educational use only</footer>
+
+    <script>
+        /* ============================================================
+           BRIDGE: All native calls go through window.WifiBridge (Kotlin).
+           If bridge is missing (e.g. preview in browser), we mock it.
+           ============================================================ */
+        const Bridge = (() => {
+            const real = window.WifiBridge;
+            if (real) return real;
+            // Mock for browser preview
+            console.warn("WifiBridge not found — running in MOCK mode.");
+            return {
+                isRooted: () => "false",
+                getDeviceInfo: () => JSON.stringify({ model: "BROWSER_MOCK", android: "N/A", iface: "wlan0" }),
+                scanNetworks: () => JSON.stringify([
+                    { ssid: "NETGEAR_42", bssid: "aa:bb:cc:11:22:33", rssi: -45, security: "WPA2", channel: 6 },
+                    { ssid: "TP-LINK_HOME", bssid: "aa:bb:cc:11:22:44", rssi: -67, security: "WPA2", channel: 11 },
+                    { ssid: "FreeWifi", bssid: "aa:bb:cc:11:22:55", rssi: -80, security: "OPEN", channel: 1 },
+                    { ssid: "OldRouter", bssid: "aa:bb:cc:11:22:66", rssi: -72, security: "WEP", channel: 3 }
+                ]),
+                getSavedPasswords: () => JSON.stringify([]),
+                startAttack: (ssid, bssid, mode, wordlist) => "started",
+                stopAttack: () => "stopped",
+                connectTo: (ssid, pwd) => "ok",
+                toast: (msg) => alert(msg)
+            };
+        })();
+
+        /* ============================================================
+           STATE
+           ============================================================ */
+        const state = {
+            rooted: false,
+            scanning: false,
+            attacking: false,
+            networks: [],
+            saved: [],
+            logs: []
+        };
+
+        /* ============================================================
+           UTILS
+           ============================================================ */
+        const $ = (id) => document.getElementById(id);
+        const now = () => {
+            const d = new Date();
+            return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
+        };
+
+        function log(msg, type = 'info') {
+            const cls = { info: 'log-info', warn: 'log-warn', err: 'log-err', ok: 'log-ok' }[type] || 'log-info';
+            const line = `<span class="log-time">[${now()}]</span> <span class="${cls}">${msg}</span>\n`;
+            state.logs.push(line);
+            const c = $('console');
+            c.innerHTML += line;
+            c.scrollTop = c.scrollHeight;
+        }
+
+        function signalClass(rssi) {
+            if (rssi > -55) return '';
+            if (rssi > -75) return 'mid';
+            return 'weak';
+        }
+        function signalBars(rssi) {
+            if (rssi > -55) return '▮▮▮▮';
+            if (rssi > -65) return '▮▮▮▯';
+            if (rssi > -75) return '▮▮▯▯';
+            if (rssi > -85) return '▮▯▯▯';
+            return '▯▯▯▯';
+        }
+        function secClass(sec) {
+            if (sec === 'OPEN') return 'sec-open';
+            if (sec === 'WEP') return 'sec-wep';
+            return 'sec-wpa';
+        }
+
+        function modal(title, body, onOk, onCancel) {
+            $('modalTitle').textContent = title;
+            $('modalBody').innerHTML = body;
+            $('modal').classList.add('active');
+            $('modalOk').onclick = () => { $('modal').classList.remove('active'); onOk && onOk(); };
+            $('modalCancel').onclick = () => { $('modal').classList.remove('active'); onCancel && onCancel(); };
+        }
+
+        /* ============================================================
+           TABS
+           ============================================================ */
+        document.querySelectorAll('.tab').forEach(t => {
+            t.onclick = () => {
+                document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+                document.querySelectorAll('.panel').forEach(x => x.classList.remove('active'));
+                t.classList.add('active');
+                $('panel-' + t.dataset.tab).classList.add('active');
+            };
+        });
+
+        /* ============================================================
+           ROOT CHECK & DEVICE INFO
+           ============================================================ */
+        function checkRoot() {
+            try {
+                const r = Bridge.isRooted();
+                state.rooted = (r === "true" || r === true);
+                const el = $('rootStatus');
+                if (state.rooted) {
+                    el.classList.add('root');
+                    $('rootText').textContent = 'ROOT';
+                    log('Root access verified.', 'ok');
+                } else {
+                    el.classList.remove('root');
+                    $('rootText').textContent = 'NO ROOT';
+                    log('No root access. Limited mode.', 'warn');
+                }
+            } catch (e) {
+                log('Root check failed: ' + e.message, 'err');
+            }
+        }
+
+        function loadDeviceInfo() {
+            try {
+                const info = JSON.parse(Bridge.getDeviceInfo());
+                $('devInfo').value = `${info.model || 'Unknown'} / Android ${info.android || '?'}`;
+                $('ifaceInfo').value = info.iface || 'wlan0';
+            } catch (e) {
+                log('Device info error: ' + e.message, 'err');
+            }
+        }
+
+        /* ============================================================
+           SCAN
+           ============================================================ */
+        $('btnScan').onclick = () => {
+            if (state.scanning) return;
+            state.scanning = true;
+            $('btnScan').disabled = true;
+            $('btnStopScan').disabled = false;
+            $('scanProgress').classList.add('active');
+            $('scanMeta').textContent = 'Scanning nearby networks...';
+            log('Initiating WiFi scan on ' + $('ifaceInfo').value, 'info');
+
+            let pct = 0;
+            const tick = setInterval(() => {
+                pct += 10;
+                $('scanBar').style.width = pct + '%';
+                if (pct >= 100) {
+                    clearInterval(tick);
+                    finishScan();
+                }
+            }, 200);
+        };
+
+
+        function finishScan() {
+            try {
+                const data = JSON.parse(Bridge.scanNetworks());
+                state.networks = data || [];
+                renderNetworks();
+                $('scanMeta').textContent = `Found ${state.networks.length} networks.`;
+                log(`Scan complete: ${state.networks.length} networks discovered.`);
+            } catch (e) {
+                log('Scan error: ' + e.message);
+                $('scanMeta').textContent = 'Scan failed.';
+            } finally {
+                state.scanning = false;
+                $('btnScan').disabled = false;
+                $('btnScan').textContent = 'Scan Wi-Fi';
+            }
+        }
+
+        function renderNetworks() {
+            const list = $('networkList');
+            list.innerHTML = '';
+            if (!state.networks.length) {
+                list.innerHTML = '<div class="empty">No networks found. Try scanning again.</div>';
+                return;
+            }
+
+            // signal strength অনুযায়ী sort
+            state.networks.sort((a, b) => (b.level || -100) - (a.level || -100));
+
+            state.networks.forEach((net, idx) => {
+                const card = document.createElement('div');
+                card.className = 'net-card';
+                card.dataset.index = idx;
+
+                const sig = signalBars(net.level);
+                const sec = (net.capabilities || '').match(/WPA2|WPA3|WPA|WEP|WPS/gi) || ['OPEN'];
+                const secTag = [...new Set(sec)].join(' / ');
+
+                card.innerHTML = `
+      <div class="net-head">
+        <div class="ssid">${escapeHtml(net.SSID || '<hidden>')}</div>
+        <div class="sig">${sig} ${net.level}dBm</div>
+      </div>
+      <div class="net-meta">
+        <span class="bssid">${net.BSSID || '--:--:--:--:--:--'}</span>
+        <span class="sec ${secTag.toLowerCase().replace(/\W/g, '')}">${secTag}</span>
+        <span class="ch">CH ${net.channel || '?'}</span>
+      </div>
+      <div class="net-actions">
+        <button class="btn small" onclick="attackTarget(${idx}, 'dict')">Dictionary</button>
+        <button class="btn small" onclick="attackTarget(${idx}, 'wps')">WPS Pin</button>
+        <button class="btn small" onclick="attackTarget(${idx}, 'default')">Default Key</button>
+      </div>
+    `;
+                list.appendChild(card);
+            });
+        }
+
+        function signalBars(level) {
+            if (level >= -50) return '████';
+            if (level >= -65) return '███░';
+            if (level >= -75) return '██░░';
+            if (level >= -85) return '█░░░';
+            return '░░░░';
+        }
+
+        function escapeHtml(s) {
+            return String(s).replace(/[&<>"']/g, c => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[c]));
+        }
+
+        /* ---------- Attack handlers ---------- */
+        function attackTarget(idx, mode) {
+            const net = state.networks[idx];
+            if (!net) return;
+            state.currentTarget = net;
+            state.attackMode = mode;
+
+            $('targetSsid').textContent = net.SSID || '<hidden>';
+            $('targetBssid').textContent = net.BSSID || '';
+            $('targetMode').textContent = mode.toUpperCase();
+            $('attackLog').innerHTML = '';
+            showPanel('attack');
+
+            switch (mode) {
+                case 'dict': runDictionaryAttack(net); break;
+                case 'wps': runWpsAttack(net); break;
+                case 'default': runDefaultKeyAttack(net); break;
+            }
+        }
+
+        function runDictionaryAttack(net) {
+            appendAttackLog(`[*] Starting dictionary attack on ${net.SSID}`);
+            appendAttackLog(`[*] Loading common password list...`);
+            try {
+                const result = Bridge.startDictionaryAttack(net.BSSID, net.SSID);
+                handleAttackResult(JSON.parse(result));
+            } catch (e) {
+                appendAttackLog(`[!] Error: ${e.message}`);
+            }
+        }
+
+        function runWpsAttack(net) {
+            appendAttackLog(`[*] Starting WPS PIN attack on ${net.SSID}`);
+            appendAttackLog(`[*] Generating candidate PINs from BSSID...`);
+            try {
+                const result = Bridge.startWpsAttack(net.BSSID);
+                handleAttackResult(JSON.parse(result));
+            } catch (e) {
+                appendAttackLog(`[!] Error: ${e.message}`);
+            }
+        }
+
+        function runDefaultKeyAttack(net) {
+            appendAttackLog(`[*] Generating default keys for ${net.SSID} (${net.BSSID})`);
+            try {
+                const result = Bridge.generateDefaultKeys(net.SSID, net.BSSID);
+                const keys = JSON.parse(result);
+                appendAttackLog(`[+] ${keys.length} candidate keys generated:`);
+                keys.forEach(k => appendAttackLog('    -> ' + k));
+            } catch (e) {
+                appendAttackLog(`[!] Error: ${e.message}`);
+            }
+        }
+
+        function handleAttackResult(res) {
+            if (!res) { appendAttackLog('[!] No response from bridge.'); return; }
+            if (res.success) {
+                appendAttackLog(`[+] SUCCESS! Key found: ${res.key}`);
+                $('resultBox').classList.add('success');
+                $('resultBox').textContent = 'Password: ' + res.key;
+            } else {
+                appendAttackLog(`[-] Attack finished. ${res.tried || 0} attempts. No key recovered.`);
+                $('resultBox').classList.add('fail');
+                $('resultBox').textContent = res.message || 'No key found.';
+            }
+        }
+
+        function appendAttackLog(line) {
+            const el = $('attackLog');
+            const row = document.createElement('div');
+            row.className = 'log-row';
+            row.textContent = line;
+            el.appendChild(row);
+            el.scrollTop = el.scrollHeight;
+            log(line);
+        }
+
+        /* ---------- Panels / Navigation ---------- */
+        function showPanel(name) {
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+            const target = document.getElementById('panel-' + name);
+            if (target) target.classList.add('active');
+            document.querySelectorAll('.tab').forEach(t => {
+                t.classList.toggle('active', t.dataset.target === name);
+            });
+        }
+
+        /* ---------- Boot ---------- */
+        document.addEventListener('DOMContentLoaded', () => {
+            $('btnScan').addEventListener('click', startScan);
+            $('btnClearLog').addEventListener('click', () => { $('logBox').innerHTML = ''; });
+
+            document.querySelectorAll('.tab').forEach(t => {
+                t.addEventListener('click', () => showPanel(t.dataset.target));
+            });
+
+            // Root status check
+            try {
+                const rooted = Bridge.isRooted();
+                $('rootStatus').textContent = rooted ? 'ROOT: YES' : 'ROOT: NO';
+                $('rootStatus').className = rooted ? 'ok' : 'warn';
+                log('Root status: ' + (rooted ? 'available' : 'unavailable'));
+            } catch (e) {
+                $('rootStatus').textContent = 'ROOT: ?';
+                log('Root check failed: ' + e.message);
+            }
+
+            showPanel('scan');
+            log('WifiCracker UI ready.');
+        });
+    </script>
+</body>
+
+</html>
